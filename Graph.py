@@ -91,17 +91,16 @@ PlotGraph(g)
 
 # COMMAND ----------
 
-def PlotGraph2(edge_list):
-    Gplot=nx.Graph()
-    for row in edge_list.select('src','dst').take(1000):
-        Gplot.add_edge(row['src'],row['dst'])
-    plt.figure(1,figsize=(8,8)) 
-    nx.draw(Gplot,arrows=True)
-PlotGraph2(g.edges)
+# MAGIC %md
+# MAGIC ## Neo4j visualization of the graph
+# MAGIC ![](https://raw.githubusercontent.com/alandennis1024/graphdatabase/main/images/neo4jgraph.png)
 
 # COMMAND ----------
 
-
+# MAGIC %md
+# MAGIC # Graph Algorithms
+# MAGIC ## Triangle Count
+# MAGIC Display the nodes that are part of triangles. Triangles are three nodes where all nodes have a relationship with each other.
 
 # COMMAND ----------
 
@@ -109,26 +108,62 @@ display(g.triangleCount().filter("count >0"))
 
 # COMMAND ----------
 
-display(g.inDegrees.join(vertices,"id"))
+# MAGIC %md
+# MAGIC ## Basic Graph queries
+# MAGIC ### inDegree - sum of the edges ending at each vertex
 
 # COMMAND ----------
 
-display(g.outDegrees.join(vertices,"id"))
+from pyspark.sql.functions import desc
+display(g.inDegrees.join(vertices,"id").orderBy(desc("inDegree")))
 
 # COMMAND ----------
 
-display(g.degrees.join(vertices,"id"))
+# MAGIC %md 
+# MAGIC ### outDegree - sum of the edges starting at each vertex
 
 # COMMAND ----------
 
-result = g.stronglyConnectedComponents(maxIter=20)
-result.select("id", "Name").orderBy("Name").show()
+display(g.outDegrees.join(vertices,"id").orderBy(desc("outDegree")))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### degree - Total edges starting or ending at a vertex
+
+# COMMAND ----------
+
+display(g.degrees.join(vertices,"id").orderBy(desc("degree")))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Strongly connected component
+# MAGIC From Wikipedia - In the mathematical theory of directed graphs, a graph is said to be strongly connected if every vertex is reachable from every other vertex. 
+
+# COMMAND ----------
+
+# Compute the strongly connected component (SCC) of each vertex and return a graph with each vertex assigned to the SCC containing that vertex.
+result = g.stronglyConnectedComponents(maxIter=5)
+#result.select("id", "Name").orderBy("component").show()
+display(result.groupBy(col("component")).count().orderBy(desc("count")))
+#Note there are no vertices that are part of a subgraph that are stronlgy connected
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC ## PageRank
+# MAGIC Run the Google PageRank algorithm on the graph to determine most important vertices
 
 # COMMAND ----------
 
 results = g.pageRank(resetProbability=0.15, tol=0.01)
-results.vertices.select("id","Name", "pagerank").show()
-results.edges.select("src", "dst", "weight").show()
+display(results.vertices.select("id","pagerank").join(vertices,"id").orderBy(desc("pagerank")))
+
+
+# COMMAND ----------
+
+display(results.edges.select("src", "dst", "weight").orderBy(desc("weight")))
 
 # COMMAND ----------
 
@@ -143,19 +178,31 @@ results.edges.select("src", "dst", "weight").show()
 
 # COMMAND ----------
 
-# Check for two node loops
+# MAGIC %md
+# MAGIC ## Check for two node loops
+
+# COMMAND ----------
+
 motifs = g.find("(a)-[ab]->(b); (b)-[ba]->(a)")
 display(motifs)
 
 # COMMAND ----------
 
-# Check for three node loops
+# MAGIC %md
+# MAGIC ## Check for three node loops
+
+# COMMAND ----------
+
 motifs = g.find("(a)-[ab]->(b); (b)-[bc]->(c);(c)-[ca]->(a)")
 display(motifs)
 
 # COMMAND ----------
 
-# Find chains of 2 vertices.
+# MAGIC %md
+# MAGIC ## Find chains of 2 vertices
+
+# COMMAND ----------
+
 chain2 = g.find("(a)-[ab]->(b)")
 display(chain2)
 
@@ -171,7 +218,11 @@ display(chain2.select(col("a.Name").alias("PreReqCode"),col("a.Label").alias("Pr
 
 # COMMAND ----------
 
-# Find chains of 3 vertices.
+# MAGIC %md
+# MAGIC ## Find chains of 3 vertices.
+
+# COMMAND ----------
+
 chain3 = g.find("(a)-[ab]->(b); (b)-[bc]->(c)")
 display(chain3)
 
@@ -181,7 +232,11 @@ display(chain3.select("a.Label", "b.Label", "c.Label"))
 
 # COMMAND ----------
 
-# Find chains of 4 vertices.
+# MAGIC %md
+# MAGIC ## Find chains of 4 vertices.
+
+# COMMAND ----------
+
 chain4 = g.find("(a)-[ab]->(b); (b)-[bc]->(c); (c)-[cd]->(d)")
 display(chain4)
 
@@ -191,19 +246,31 @@ display(chain4.select("a.Label", "b.Label", "c.Label","d.Label"))
 
 # COMMAND ----------
 
-# Find chains of 5 vertices.
+# MAGIC %md
+# MAGIC ## Find chains of 5 vertices.
+
+# COMMAND ----------
+
 chain5 = g.find("(a)-[ab]->(b); (b)-[bc]->(c); (c)-[cd]->(d); (d)-[de]->(e)")
 display(chain5)
 
 # COMMAND ----------
 
-# Find chains of 6 vertices.
+# MAGIC %md
+# MAGIC ## Find chains of 6 vertices.
+
+# COMMAND ----------
+
 chain6 = g.find("(a)-[ab]->(b); (b)-[bc]->(c); (c)-[cd]->(d); (d)-[de]->(e); (e)-[ef]->(f)")
 display(chain6)
 
 # COMMAND ----------
 
-# Find chains of 5 vertices that end with Capstone II.
+# MAGIC %md
+# MAGIC ## Find chains of 5 vertices that end with Capstone II.
+
+# COMMAND ----------
+
 chain5Filter = g.find("(a)-[ab]->(b); (b)-[bc]->(c); (c)-[cd]->(d); (d)-[de]->(e)").filter("e.id = 12")
 display(chain5Filter)
 
