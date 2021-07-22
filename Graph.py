@@ -95,13 +95,23 @@ display(g.vertices)
 
 import networkx as nx
 import matplotlib.pyplot as plt
-
+def PlotDag(graph):
+  G = nx.DiGraph()
+  for x in graph.edges.collect():
+    src = x["src"]
+    dst = x["dst"]
+    G.add_edge(src,dst)
+  plt.figure(1,figsize=(8,8)) 
+  pos = nx.spiral_layout(G)
+  nx.draw(G,pos=pos,with_labels = True, arrows = True,edge_color = 'b', arrowstyle='fancy' )
+  plt.show()
 def PlotGraph(graph):
   G = nx.from_pandas_edgelist(graph.edges.toPandas(),'src','dst')
   plt.figure(1,figsize=(8,8)) 
   nx.draw(G,with_labels = True, arrows = True, arrowsize=20,edge_color = 'b', arrowstyle='fancy' )
   plt.show()
-PlotGraph(g)
+#PlotGraph(g)
+PlotDag(g)
 
 # COMMAND ----------
 
@@ -403,19 +413,30 @@ for x in pizzaGraph.vertices.collect():
 # COMMAND ----------
 
 def PlotGraphWithLabels(graph,vertexLabel,edgeLabel):
+  plt.figure(1,figsize=(8,8)) 
   G = nx.DiGraph()
-  for x in pizzaGraph.edges.collect():
+  for x in graph.edges.collect():
     src = x["src"]
     dst = x["dst"]
-    weight = x["weight"]
+    weight = x[edgeLabel]
     #print(src,dst,weight)
     G.add_edge(src,dst,weight=weight)
-  plt.figure(1,figsize=(8,8)) 
-  pos = nx.spring_layout(G)
+  pos = nx.circular_layout(G)
   #nx.draw(G,with_labels = True, arrows = True, arrowsize=20,edge_color = 'b', arrowstyle='fancy' )
   node_labels = nx.get_node_attributes(G,vertexLabel)
-  print(node_labels)  
-  nx.draw_networkx_labels(G, pos, labels = node_labels)
+  print("node labels",node_labels)  
+  nx.draw_networkx_labels(G, pos)
+  
+  edge_labels = nx.get_edge_attributes(G,edgeLabel)
+  #nx.draw_networkx_edge_labels(G, pos, labels = edge_labels)
+  nx.draw_networkx_edges(G, pos, edge_color='green',     arrowstyle='-|>')
+  #####
+  plt.figure(2,figsize=(8,8)) 
+  pos = nx.circular_layout(G)
+  #nx.draw(G,with_labels = True, arrows = True, arrowsize=20,edge_color = 'b', arrowstyle='fancy' )
+  node_labels = nx.get_node_attributes(G,vertexLabel)
+  print("node labels",node_labels)  
+  #nx.draw_networkx_labels(G, pos)
   
   edge_labels = nx.get_edge_attributes(G,edgeLabel)
   nx.draw_networkx_edge_labels(G, pos, labels = edge_labels)
@@ -425,12 +446,20 @@ PlotGraphWithLabels(pizzaGraph,"Name","weight")
 
 # COMMAND ----------
 
-|display(pizzaGraph.edges)
+display(pizzaGraph.edges)
 
 
 # COMMAND ----------
 
 display(pizzaGraph.edges.groupBy("src").sum("weight"))
+
+# COMMAND ----------
+
+display(g.vertices)
+
+# COMMAND ----------
+
+PlotGraphWithLabels(g,"Name","RelationshipType")
 
 # COMMAND ----------
 
