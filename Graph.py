@@ -143,6 +143,7 @@ display(g.degrees.join(vertices,"id").orderBy(desc("degree")))
 
 # COMMAND ----------
 
+ from pyspark.sql.functions import col
 # Compute the strongly connected component (SCC) of each vertex and return a graph with each vertex assigned to the SCC containing that vertex.
 result = g.stronglyConnectedComponents(maxIter=5)
 #result.select("id", "Name").orderBy("component").show()
@@ -271,7 +272,7 @@ display(chain6)
 
 # COMMAND ----------
 
-chain5Filter = g.find("(a)-[ab]->(b); (b)-[bc]->(c); (c)-[cd]->(d); (d)-[de]->(e)").filter("e.id = 12")
+chain5Filter = g.find("(a)-[ab]->(b); (b)-[bc]->(c); (c)-[cd]->(d); (d)-[de]->(e)").filter("e.Name = 'ITSS 439'")
 display(chain5Filter)
 
 # COMMAND ----------
