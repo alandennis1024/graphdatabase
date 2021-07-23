@@ -544,7 +544,7 @@ M ** n
 
 # MAGIC %md
 # MAGIC ## Message passing in the graph
-# MAGIC First, sum up the outgoing weights for each vertex, it should be 1
+# MAGIC Sum up the outgoing weights for each vertex, it should be 1
 
 # COMMAND ----------
 
