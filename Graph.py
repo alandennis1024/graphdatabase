@@ -390,6 +390,12 @@ display(chain5Filter.select("a.Label", "b.Label", "c.Label","d.Label", "e.Label"
 
 # COMMAND ----------
 
+# MAGIC %md 
+# MAGIC # Pizza Example
+# MAGIC ![](https://raw.githubusercontent.com/alandennis1024/graphdatabase/main/images/PizzaState.jpg)
+
+# COMMAND ----------
+
 pizzav = spark.sql("select * from pizzav")
 pizzae = spark.sql("select * from pizzae")
 pizzaGraph = GraphFrame(pizzav,pizzae)
@@ -446,8 +452,22 @@ PlotGraphWithLabels(pizzaGraph,"Name","weight")
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC We have some self-loops, where there is a probability of staying in the same state
+
+# COMMAND ----------
+
 display(pizzaGraph.edges)
 
+
+# COMMAND ----------
+
+display(pizzaGraph.edges.filter("src == dst"))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC In a Markov chain, the sum of the outgoing probabilites must add up to 1
 
 # COMMAND ----------
 
@@ -455,11 +475,91 @@ display(pizzaGraph.edges.groupBy("src").sum("weight"))
 
 # COMMAND ----------
 
-display(g.vertices)
+# MAGIC %md
+# MAGIC ## Converting Graph to state transition matrix
 
 # COMMAND ----------
 
-PlotGraphWithLabels(g,"Name","RelationshipType")
+from pyspark.ml import Pipeline
+from pyspark.ml.feature import StringIndexer
+# Note the use of a alphabetDesc stringOrderType to ensure both columns have the same mappings
+indexers = [StringIndexer(inputCol=column, outputCol=column+"_index",stringOrderType="alphabetDesc").fit(pizzaGraph.edges) for column in list(set(pizzaGraph.edges.columns)-set(['weight'])) ]
+pipeline = Pipeline(stages=indexers)
+df_r = pipeline.fit(pizzaGraph.edges).transform(pizzaGraph.edges)
+display(df_r)
+
+
+# COMMAND ----------
+
+display(df_r.select("src","src_index").distinct())
+
+# COMMAND ----------
+
+display(df_r.select("dst","dst_index").distinct().orderBy("dst_index"))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Creating the Transition Matrix
+# MAGIC Create a matrix initialized to zero, then set the weights for places where transitions have a probability
+
+# COMMAND ----------
+
+import numpy as np
+vertexcount = pizzaGraph.vertices.count()
+M = np.zeros((vertexcount,vertexcount))
+for row in df_r.collect():
+  src = int(row["src_index"])
+  dst = int(row["dst_index"])
+  weight = row["weight"]
+  M[src][dst] = weight
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC M is the transition matrix. Given a transition matrix, we can use Markov methods and raise M to a power n, where nis the units of time that have elapsed.
+# MAGIC 
+# MAGIC Initial state transition probabilites
+
+# COMMAND ----------
+
+M
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC What are the chances that a person in line will continue to wait in line after a unit of time has elapsed?
+
+# COMMAND ----------
+
+n = 2
+M ** n
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC The probability of someone waiting after one unit of time has elapsed (at T=2) goes from 50% to 25%.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Message passing in the graph
+# MAGIC First, sum up the outgoing weights for each vertex, it should be 1
+
+# COMMAND ----------
+
+from pyspark.sql.functions import avg as sqlavg
+from pyspark.sql.functions import sum as sqlsum
+from graphframes.lib import AggregateMessages as AM
+from graphframes.examples import Graphs
+print(agg)
+
+msgToSrc = AM.edge["weight"]
+msgToDst = AM.dst["id"]
+agg = pizzaGraph.aggregateMessages(
+  sqlsum(AM.msg).alias("output"),sendToSrc = msgToSrc)
+display(agg)
+
 
 # COMMAND ----------
 
