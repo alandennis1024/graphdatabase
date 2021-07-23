@@ -445,7 +445,7 @@ def PlotGraphWithLabels(graph,vertexLabel,edgeLabel):
   #nx.draw_networkx_labels(G, pos)
   
   edge_labels = nx.get_edge_attributes(G,edgeLabel)
-  nx.draw_networkx_edge_labels(G, pos, labels = edge_labels)
+  nx.draw_networkx_edge_labels(G, pos, edge_labels  = edge_labels)
   nx.draw_networkx_edges(G, pos, edge_color='green',     arrowstyle='-|>')
   plt.show()
 PlotGraphWithLabels(pizzaGraph,"Name","weight")
@@ -491,7 +491,7 @@ display(df_r)
 
 # COMMAND ----------
 
-display(df_r.select("src","src_index").distinct())
+display(df_r.select("src","src_index").distinct().orderBy("src_index"))
 
 # COMMAND ----------
 
@@ -552,7 +552,7 @@ from pyspark.sql.functions import avg as sqlavg
 from pyspark.sql.functions import sum as sqlsum
 from graphframes.lib import AggregateMessages as AM
 from graphframes.examples import Graphs
-print(agg)
+
 
 msgToSrc = AM.edge["weight"]
 msgToDst = AM.dst["id"]
